@@ -125,8 +125,8 @@ class Bullet(arcade.Sprite):
         
     def update(self, delta_time):
         # Удаляем пулю, если она ушла за экран
-        if (self.center_x < 0 or self.center_x > SCREEN_WIDTH or
-            self.center_y < 0 or self.center_y > SCREEN_HEIGHT):
+        if (self.center_x < -100 or self.center_x > SCREEN_WIDTH + 100 or
+            self.center_y < -100 or self.center_y > SCREEN_HEIGHT + 100):
             self.remove_from_sprite_lists()
 
         self.center_x += self.change_x * delta_time
@@ -188,7 +188,6 @@ class MyGame(arcade.Window):
     def on_update(self, delta_time):
         # Обновляем все списки (кроме неподвижных стен)
         self.player_list.update(delta_time, self.keys_pressed)
-        self.bullet_list.update()
         self.physics_engine.update()
         position = (
             self.player.center_x,
@@ -198,19 +197,30 @@ class MyGame(arcade.Window):
         self.world_camera.position = arcade.math.lerp_2d(  # Изменяем позицию камеры
             self.world_camera.position,
             position,
-            CAMERA_LERP,  # Плавность следования камеры
+            CAMERA_LERP,  # Плавность
         )
-        
-        # Обновляем анимации игрока
         self.player_list.update_animation()
+        for bullet in self.bullet_list:
+            bullet.update(delta_time)
+        
+        for bullet in self.bullet_list:
+            hit_wall = arcade.check_for_collision_with_list(bullet, self.wall_list)
+            if hit_wall:
+                bullet.remove_from_sprite_lists()
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
+            world_coords = self.world_camera.unproject((x, y))
+            world_x = world_coords[0]
+            world_y = world_coords[1]
+            world_x = max(0, min(world_x, SCREEN_WIDTH))
+            world_y = max(0, min(world_y, SCREEN_HEIGHT))
+            
             bullet = Bullet(
                 self.player.center_x,
                 self.player.center_y,
-                x,
-                y
+                world_x,
+                world_y
             )
             self.bullet_list.append(bullet)
             # Проигрываем звук выстрела
