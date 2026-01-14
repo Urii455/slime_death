@@ -1,4 +1,5 @@
 import arcade
+from pyglet.graphics import Batch
 import math
 import enum
 import random
@@ -20,7 +21,7 @@ class Hero(arcade.Sprite):
 
         # Основные характеристики
         self.scale = 1.0
-        self.speed = 300
+        self.speed = 250
         self.health = 100
         
         # Загрузка текстур
@@ -132,13 +133,23 @@ class Bullet(arcade.Sprite):
         self.center_x += self.change_x * delta_time
         self.center_y += self.change_y * delta_time
 
+class Slime(arcade.Sprite):
+    def __init__(self, x, y, speed=100, damage=10):
+        super().__init__(scale=0.1)
+        self.texture = arcade.load_texture("pictures/anim/слизень/slime.png")
+        self.speed = speed
+        self.damage = damage
+        self.center_x = x
+        self.center_y = y
 
+    
 
 class MyGame(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title, fullscreen=True)
         arcade.set_background_color(arcade.color.ASH_GREY)
         self.world_camera = arcade.camera.Camera2D()
+        self.gui_camera = arcade.camera.Camera2D()
         self.world_camera.zoom = 2
         self.all_sprites = arcade.SpriteList()
         self.player_sprite = Hero()
@@ -146,6 +157,8 @@ class MyGame(arcade.Window):
         self.map_width = 50
         self.map_height = 50
         self.tile_size = 32
+        self.score = 0
+        self.batch = Batch()
 
 
     def setup(self):
@@ -154,6 +167,7 @@ class MyGame(arcade.Window):
         self.bullet_list = arcade.SpriteList()
         self.player_list = arcade.SpriteList()
         map_name = "текстуры/карта1.tmx"
+        self.slime_list = arcade.SpriteList()
         
         scale_x = self.width / (self.map_width * self.tile_size)
         scale_y = self.height / (self.map_height * self.tile_size)
@@ -168,13 +182,18 @@ class MyGame(arcade.Window):
         # Создаём игрока
         self.player = Hero()
         self.player_list.append(self.player)
+        for _ in range(20):
+            self.slime_list.append(Slime(random.randint(0, self._width), random.randint(0, self._height)))
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.collision_list
         )
         self.shoot_sound = arcade.load_sound("sound/пистолет.mp3")
+        self.slime_dead_sound = arcade.load_sound("sound/slime_dead.mp3")
         
         self.keys_pressed = set()
+        self.lable_score = arcade.Text(f"Score: {self.score}", 125, 50, batch=self.batch, font_size=50, color=arcade.color.WHITE,
+                                        anchor_x="center", anchor_y="center")
 
     def on_draw(self):
         self.clear()
@@ -183,12 +202,18 @@ class MyGame(arcade.Window):
         self.wall_list.draw()
         self.player_list.draw()
         self.bullet_list.draw()
+        self.slime_list.draw()
+
+        self.gui_camera.use()
+
+        self.batch.draw()
 
 
     def on_update(self, delta_time):
         # Обновляем все списки (кроме неподвижных стен)
         self.player_list.update(delta_time, self.keys_pressed)
         self.physics_engine.update()
+        self.slime_list.update()
         position = (
             self.player.center_x,
             self.player.center_y
@@ -204,18 +229,26 @@ class MyGame(arcade.Window):
             bullet.update(delta_time)
         
         for bullet in self.bullet_list:
-            hit_wall = arcade.check_for_collision_with_list(bullet, self.wall_list)
+            hit_wall = arcade.check_for_collision_with_list(bullet, self.wall_list) # Удаление пули при врезание в стену
             if hit_wall:
                 bullet.remove_from_sprite_lists()
+        
+        for slime in self.slime_list:
+            hit_slime = arcade.check_for_collision_with_list(slime, self.bullet_list)   # Удаление слизни при врезание пули в слизня
+            if hit_slime:
+                slime.remove_from_sprite_lists()
+                self.score += 1
+                self.slime_list.append(Slime(random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)))
+                arcade.play_sound(self.slime_dead_sound, volume=1)
+
+        self.lable_score.text = f"Score: {self.score}"
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
             world_coords = self.world_camera.unproject((x, y))
             world_x = world_coords[0]
             world_y = world_coords[1]
-            world_x = max(0, min(world_x, SCREEN_WIDTH))
-            world_y = max(0, min(world_y, SCREEN_HEIGHT))
-            
+
             bullet = Bullet(
                 self.player.center_x,
                 self.player.center_y,
@@ -224,7 +257,7 @@ class MyGame(arcade.Window):
             )
             self.bullet_list.append(bullet)
             # Проигрываем звук выстрела
-            arcade.play_sound(self.shoot_sound)
+            arcade.play_sound(self.shoot_sound, volume=0.3)
 
     def on_key_press(self, key, modifiers):
         self.keys_pressed.add(key)
