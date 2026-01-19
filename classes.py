@@ -139,8 +139,6 @@ class Slime(arcade.Sprite):
         self.center_y = y
         
     def follow_player(self, player, delta_time, wall_list):
-        """Движение к игроку с проверкой столкновений"""
-        # Вычисление куда идти
         dx = player.center_x - self.center_x
         dy = player.center_y - self.center_y
         
@@ -151,25 +149,18 @@ class Slime(arcade.Sprite):
             old_x = self.center_x
             old_y = self.center_y
             
-            # Слизень двигается
             self.center_x += dx * self.speed * delta_time
             self.center_y += dy * self.speed * delta_time
-            
-            # Проверяем столкновение со стенами
             hit_wall = arcade.check_for_collision_with_list(self, wall_list)
             if hit_wall:
                 self.center_x = old_x
                 self.center_y = old_y
-                
-                # Пробуем двигаться только по X
                 self.center_x = old_x + dx * self.speed * delta_time
                 self.center_y = old_y
                 hit_wall_x = arcade.check_for_collision_with_list(self, wall_list)
                 if hit_wall_x:
                     self.center_x = old_x
                 
-                # Пробуем двигаться только по Y
-                self.center_x = old_x
                 self.center_y = old_y + dy * self.speed * delta_time
                 hit_wall_y = arcade.check_for_collision_with_list(self, wall_list)
                 if hit_wall_y:
