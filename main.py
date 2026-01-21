@@ -12,7 +12,7 @@ class FaceDirection(enum.Enum):
 
 # Задаём размеры окна
 SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 1100
+SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Спрайтовый герой"
 
 
@@ -32,15 +32,16 @@ class MyGame(arcade.Window):
         self.score = 0
         self.batch = Batch()
         self.health = 1000
+        self.num = 0
 
 
 
     def setup(self):
-        self.wall_list = arcade.SpriteList()
-        self.bullet_list = arcade.SpriteList()
-        self.player_list = arcade.SpriteList()
+        self.wall_list = arcade.SpriteList(use_spatial_hash=True)
+        self.bullet_list = arcade.SpriteList(use_spatial_hash=True)
+        self.player_list = arcade.SpriteList(use_spatial_hash=True)
         map_name = "текстуры/карта1.tmx"
-        self.slime_list = arcade.SpriteList()
+        self.slime_list = arcade.SpriteList(use_spatial_hash=True)
         
         scale_x = self.width / (self.map_width * self.tile_size)
         scale_y = self.height / (self.map_height * self.tile_size)
@@ -70,7 +71,9 @@ class MyGame(arcade.Window):
         self.slime_dead_sound = arcade.load_sound("sound/slime_dead.mp3")
         
         self.keys_pressed = set()
-        self.lable_score = arcade.Text(f"Score: {self.score}", 125, 50, batch=self.batch, font_size=50, color=arcade.color.WHITE,
+        self.lable_score = arcade.Text(f"Score: {self.score}", 80, 30, batch=self.batch, font_size=25, color=arcade.color.WHITE,
+                                        anchor_x="center", anchor_y="center")
+        self.lable_score2 = arcade.Text(f"health: {self.score}", 102, 60, batch=self.batch, font_size=25, color=arcade.color.WHITE,
                                         anchor_x="center", anchor_y="center")
                                         
 
@@ -89,6 +92,10 @@ class MyGame(arcade.Window):
 
 
     def on_update(self, delta_time):
+        if self.num == 0: # что бы хп с 1 секунды писались
+            self.lable_score2.text = f"health: {self.health}"
+            self.num += 1
+
         self.player_list.update(delta_time, self.keys_pressed)
         self.physics_engine.update()
         
@@ -112,12 +119,12 @@ class MyGame(arcade.Window):
             bullet.update(delta_time)
         
         for bullet in self.bullet_list:
-            hit_wall = arcade.check_for_collision_with_list(bullet, self.wall_list) # Удаление пули при врезание в стену
+            hit_wall = arcade.check_for_collision_with_list(bullet, self.wall_list) # удаление пули при врезание в стену
             if hit_wall:
                 bullet.remove_from_sprite_lists()
         
         for slime in self.slime_list:
-            hit_slime = arcade.check_for_collision_with_list(slime, self.bullet_list)   # Удаление слизни при врезание пули в слизня
+            hit_slime = arcade.check_for_collision_with_list(slime, self.bullet_list)   # удаление слизни при врезание пули в слизня
             if hit_slime:
                 slime.remove_from_sprite_lists()
                 self.score += 1
@@ -132,11 +139,13 @@ class MyGame(arcade.Window):
         player_damage = arcade.check_for_collision_with_list(self.player, self.slime_list)
         if player_damage:
             self.health -= 10
+            self.lable_score2.text = f"health: {self.health}"   # выводим хп
             if self.health == 0:
                 arcade.close_window()
                 print('Вы проиграли скоро здесь будет главное меню))')
         
-        self.lable_score.text = f"Score: {self.score}"
+        self.lable_score.text = f"Score: {self.score}"  # выводим счёт
+
             
 
     def on_mouse_press(self, x, y, button, modifiers):
