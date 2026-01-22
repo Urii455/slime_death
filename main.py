@@ -33,10 +33,12 @@ class MyGame(arcade.Window):
         self.batch = Batch()
         self.health = 1000
         self.num = 0
+        self.game_music = arcade.load_sound("sound/game_music.mp3")
 
 
 
     def setup(self):
+        arcade.play_sound(self.game_music, volume=1, loop=1)   #   музыка игры
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.bullet_list = arcade.SpriteList(use_spatial_hash=True)
         self.player_list = arcade.SpriteList(use_spatial_hash=True)
