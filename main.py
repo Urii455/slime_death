@@ -71,6 +71,7 @@ class MyGame(arcade.Window):
         )
         self.shoot_sound = arcade.load_sound("sound/пистолет.mp3")
         self.slime_dead_sound = arcade.load_sound("sound/slime_dead.mp3")
+        self.death = arcade.load_sound("sound/смерть.mp3")
         
         self.keys_pressed = set()
         self.lable_score = arcade.Text(f"Score: {self.score}", 80, 30, batch=self.batch, font_size=25, color=arcade.color.WHITE,
@@ -141,6 +142,7 @@ class MyGame(arcade.Window):
         player_damage = arcade.check_for_collision_with_list(self.player, self.slime_list)
         if player_damage:
             self.health -= 10
+            arcade.play_sound(self.death, volume=0.2)
             self.lable_score2.text = f"health: {self.health}"   # выводим хп
             if self.health == 0:
                 arcade.close_window()
