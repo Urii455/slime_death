@@ -175,7 +175,7 @@ class MyGame(arcade.Window):
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
 
-def main():
+def main2():
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     game.setup()
     arcade.run()
