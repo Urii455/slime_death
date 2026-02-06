@@ -1,4 +1,5 @@
 import arcade
+import time
 from pyglet.graphics import Batch
 import math
 import enum
@@ -31,9 +32,11 @@ class MyGame(arcade.Window):
         self.tile_size = 32
         self.score = 0
         self.batch = Batch()
-        self.health = 1000
+        self.health = 100
         self.num = 0
         self.game_music = arcade.load_sound("sound/game_music.mp3")
+        self.is_invincible = False
+        self.invincible_end_time = 2
 
 
 
@@ -141,11 +144,19 @@ class MyGame(arcade.Window):
         
         player_damage = arcade.check_for_collision_with_list(self.player, self.slime_list)
         if player_damage:
-            self.health -= 10
-            arcade.play_sound(self.death, volume=0.2)
-            self.lable_score2.text = f"health: {self.health}"   # выводим хп
-            if self.health == 0:
-                arcade.close_window()
+            if self.is_invincible:
+                if time.time() > self.invincible_end_time:
+                    self.is_invincible = False
+            if not self.is_invincible:
+                self.health -= 10
+                arcade.play_sound(self.death, volume=0.8)
+                self.start_invincibility(0.7)
+                self.lable_score2.text = f"health: {self.health}"   # выводим хп
+                if self.health == 0:
+                    arcade.close_window()
+            else:
+                self.lable_score2.text = f"health: {self.health}"   # выводим хп
+
         
         self.lable_score.text = f"Score: {self.score}"  # выводим счёт
 
@@ -173,6 +184,11 @@ class MyGame(arcade.Window):
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
+    
+    def start_invincibility(self, seconds=1):
+        self.is_invincible = True
+        self.invincible_end_time = time.time() + seconds
+
 
 def main():
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)

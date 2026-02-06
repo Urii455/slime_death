@@ -1,9 +1,13 @@
 import arcade
+import time
 from pyglet.graphics import Batch
 import math
 import enum
 import random
 from classes import Hero, Bullet, Slime
+from arcade.particles import FadeParticle, Emitter, EmitBurst, EmitInterval, EmitMaintainCount
+from pyglet.graphics import Batch
+from dataclasses import dataclass
 
 
 A = None
@@ -16,7 +20,12 @@ class FaceDirection(enum.Enum):
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Спрайтовый герой"
-
+SPARK_TEX = [
+    arcade.make_soft_circle_texture(8, arcade.color.PASTEL_YELLOW),
+    arcade.make_soft_circle_texture(8, arcade.color.PEACH),
+    arcade.make_soft_circle_texture(8, arcade.color.BABY_BLUE),
+    arcade.make_soft_circle_texture(8, arcade.color.ELECTRIC_CRIMSON),
+]
 
 class MyGame(arcade.Window):
     def __init__(self, width, height, title):
@@ -33,9 +42,11 @@ class MyGame(arcade.Window):
         self.tile_size = 32
         self.score = 0
         self.batch = Batch()
-        self.health = 1000
+        self.health = 100
         self.num = 0
         self.game_music = arcade.load_sound("sound/game_music.mp3")
+        self.is_invincible = False
+        self.invincible_end_time = 2
 
 
 
@@ -131,6 +142,7 @@ class MyGame(arcade.Window):
         for slime in self.slime_list:
             hit_slime = arcade.check_for_collision_with_list(slime, self.bullet_list)   # удаление слизни при врезание пули в слизня
             if hit_slime:
+                print(slime)
                 slime.remove_from_sprite_lists()
                 self.score += 1
                 self.slime_list.append(Slime(random.randint(110, SCREEN_HEIGHT - 100), random.randint(50, SCREEN_WIDTH)))
@@ -143,13 +155,18 @@ class MyGame(arcade.Window):
         
         player_damage = arcade.check_for_collision_with_list(self.player, self.slime_list)
         if player_damage:
-            self.health -= 10
-            arcade.play_sound(self.death, volume=0.2)
-            self.lable_score2.text = f"health: {self.health}"   # выводим хп
-            if self.health == 0:
-                arcade.close_window()
-        
-        self.lable_score.text = f"Score: {self.score}"  # выводим счёт
+            if self.is_invincible:
+                if time.time() > self.invincible_end_time:
+                    self.is_invincible = False
+            if not self.is_invincible:
+                self.health -= 10
+                arcade.play_sound(self.death, volume=0.8)
+                self.start_invincibility(0.7)
+                self.lable_score2.text = f"health: {self.health}"   # выводим хп
+                if self.health == 0:
+                    arcade.close_window()
+            else:
+                self.lable_score2.text = f"health: {self.health}"   # выводим хп
 
             
 
@@ -175,6 +192,33 @@ class MyGame(arcade.Window):
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
             self.keys_pressed.remove(key)
+
+    
+    def start_invincibility(self, seconds=1):
+        self.is_invincible = True
+        self.invincible_end_time = time.time() + seconds
+
+def make_ring(x, y, count=40, radius=5.0):
+    # Кольцо искр (векторы направлены по окружности)
+    return Emitter(
+        center_xy=(x, y),
+        emit_controller=EmitBurst(count),
+        particle_factory=lambda e: FadeParticle(
+            filename_or_texture=random.choice(SPARK_TEX),
+            change_xy=arcade.math.rand_on_circle((0.0, 0.0), radius),
+            lifetime=random.uniform(0.8, 1.4),
+            start_alpha=255, end_alpha=0,
+            scale=random.uniform(0.4, 0.7),
+            mutation_callback=gravity_drag,
+        ),
+    )
+
+
+def gravity_drag(p):  # Для искр: чуть вниз и затухание скорости
+    p.change_y += -0.03
+    p.change_x *= 0.92
+    p.change_y *= 0.92
+
 
 def main2():
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
