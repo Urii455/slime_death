@@ -20,12 +20,6 @@ class FaceDirection(enum.Enum):
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Спрайтовый герой"
-SPARK_TEX = [
-    arcade.make_soft_circle_texture(8, arcade.color.PASTEL_YELLOW),
-    arcade.make_soft_circle_texture(8, arcade.color.PEACH),
-    arcade.make_soft_circle_texture(8, arcade.color.BABY_BLUE),
-    arcade.make_soft_circle_texture(8, arcade.color.ELECTRIC_CRIMSON),
-]
 
 class MyGame(arcade.Window):
     def __init__(self, width, height, title):
@@ -198,20 +192,6 @@ class MyGame(arcade.Window):
         self.is_invincible = True
         self.invincible_end_time = time.time() + seconds
 
-def make_ring(x, y, count=40, radius=5.0):
-    # Кольцо искр (векторы направлены по окружности)
-    return Emitter(
-        center_xy=(x, y),
-        emit_controller=EmitBurst(count),
-        particle_factory=lambda e: FadeParticle(
-            filename_or_texture=random.choice(SPARK_TEX),
-            change_xy=arcade.math.rand_on_circle((0.0, 0.0), radius),
-            lifetime=random.uniform(0.8, 1.4),
-            start_alpha=255, end_alpha=0,
-            scale=random.uniform(0.4, 0.7),
-            mutation_callback=gravity_drag,
-        ),
-    )
 
 
 def gravity_drag(p):  # Для искр: чуть вниз и затухание скорости
