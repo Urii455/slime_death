@@ -1,5 +1,9 @@
 import arcade
+import threading
 import time
+import os
+import sys
+
 from pyglet.graphics import Batch
 import math
 import enum
@@ -21,6 +25,8 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Спрайтовый герой"
 
+
+
 class MyGame(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title, fullscreen=True)
@@ -41,6 +47,16 @@ class MyGame(arcade.Window):
         self.game_music = arcade.load_sound("sound/game_music.mp3")
         self.is_invincible = False
         self.invincible_end_time = 2
+
+        def close_game():
+            print("Время вышло!")
+            print(self.health)
+            print(self.score)
+            arcade.stop_sound()
+            arcade.close_window()
+
+        timer = threading.Timer(120.0, close_game)
+        timer.start()
 
 
 
@@ -158,6 +174,7 @@ class MyGame(arcade.Window):
                 self.start_invincibility(0.7)
                 self.lable_score2.text = f"health: {self.health}"   # выводим хп
                 if self.health == 0:
+                    arcade.stop_sound()
                     arcade.close_window()
             else:
                 self.lable_score2.text = f"health: {self.health}"   # выводим хп
@@ -182,6 +199,9 @@ class MyGame(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         self.keys_pressed.add(key)
+        if key == arcade.key.KEY_0 or key == arcade.key.NUM_0:
+            arcade.stop_sound()
+            arcade.close_window()
         
     def on_key_release(self, key, modifiers):
         if key in self.keys_pressed:
